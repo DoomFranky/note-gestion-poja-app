@@ -1,39 +1,37 @@
 package hei.school.gestion.mapper;
 
-import hei.school.gestion.entity.domain.JGrade;
-import hei.school.gestion.entity.model.Grade;
+import hei.school.gestion.entity.domain.JExamGrade;
+import hei.school.gestion.entity.model.ExamGrade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class GradeMapper {
+public class ExamGradeMapper {
 
+  private final ExamMapper examMapper;
   private final UserMapper userMapper;
-  private final CourseMapper courseMapper;
 
-  public Grade toDomain(JGrade entity) {
+  public ExamGrade toDomain(JExamGrade entity) {
     if (entity == null) return null;
 
-    return Grade.builder()
+    return ExamGrade.builder()
         .id(entity.getId())
+        .exam(examMapper.toDomain(entity.getExam()))
         .student(userMapper.toDomain(entity.getStudent()))
-        .course(courseMapper.toDomain(entity.getCourse()))
-        .academicYear(entity.getAcademicYear())
         .score(entity.getScore())
         .updatedAt(entity.getUpdatedAt())
         .updatedBy(userMapper.toDomain(entity.getUpdatedBy()))
         .build();
   }
 
-  public JGrade toEntity(Grade domain) {
+  public JExamGrade toEntity(ExamGrade domain) {
     if (domain == null) return null;
 
-    return JGrade.builder()
+    return JExamGrade.builder()
         .id(domain.getId())
+        .exam(examMapper.toEntity(domain.getExam()))
         .student(userMapper.toEntity(domain.getStudent()))
-        .course(courseMapper.toEntity(domain.getCourse()))
-        .academicYear(domain.getAcademicYear())
         .score(domain.getScore())
         .updatedAt(domain.getUpdatedAt())
         .updatedBy(userMapper.toEntity(domain.getUpdatedBy()))

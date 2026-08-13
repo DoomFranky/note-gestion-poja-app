@@ -10,14 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
+public class Promotion {
   private String id;
-  private String ref;
-  private String firstName;
-  private String lastName;
-  private String email;
-  private UserRole role;
-  private Track track;
-  private Promotion promotion;
+  private String label;
   private Instant createdAt;
 }

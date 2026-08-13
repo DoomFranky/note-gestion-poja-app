@@ -14,6 +14,7 @@ public class Grade {
   private String id;
   private User student;
   private Course course;
+  private Integer academicYear;
   private Double score;
   private Instant updatedAt;
   private User updatedBy;

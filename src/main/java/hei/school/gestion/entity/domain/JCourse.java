@@ -27,6 +27,10 @@ public class JCourse {
   @Column(nullable = false)
   private Integer credits;
 
+  @Enumerated(EnumType.STRING)
+  @Column(length = 10)
+  private JTrack track;
+
   @ManyToMany
   @JoinTable(
       name = "course_teacher",
