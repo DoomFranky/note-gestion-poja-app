@@ -129,9 +129,9 @@ SELECT 'e' || cy.course_id || '_1',
        cy.course_id,
        cy.year,
        'Partiel 1',
-       CASE WHEN cy.year = 1 THEN '2025-01-15 09:00:00+03'
-            WHEN cy.year = 2 THEN '2025-12-15 09:00:00+03'
-            ELSE '2026-12-10 09:00:00+03' END,
+       (CASE WHEN cy.year = 1 THEN '2025-01-15 09:00:00+03'
+             WHEN cy.year = 2 THEN '2025-12-15 09:00:00+03'
+             ELSE '2026-12-10 09:00:00+03' END)::timestamptz,
        1,
        CASE WHEN cy.year = 1 THEN 4 ELSE 2 END
 FROM course_year cy;
@@ -150,9 +150,9 @@ SELECT 'e' || cy.course_id || '_2',
        cy.course_id,
        cy.year,
        'Partiel 2',
-       CASE WHEN cy.year = 1 THEN '2025-02-15 09:00:00+03'
-            WHEN cy.year = 2 THEN '2026-01-20 09:00:00+03'
-            ELSE '2027-01-15 09:00:00+03' END,
+       (CASE WHEN cy.year = 1 THEN '2025-02-15 09:00:00+03'
+             WHEN cy.year = 2 THEN '2026-01-20 09:00:00+03'
+             ELSE '2027-01-15 09:00:00+03' END)::timestamptz,
        1,
        CASE WHEN cy.year = 1 THEN 4 ELSE 2 END
 FROM course_year cy;
@@ -167,7 +167,7 @@ SELECT 'e' || cy.course_id || '_3',
        cy.course_id,
        cy.year,
        'Examen final',
-       '2025-03-10 09:00:00+03',
+       '2025-03-10 09:00:00+03'::timestamptz,
        1,
        2
 FROM course_year cy;
