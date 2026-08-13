@@ -1,0 +1,163 @@
+openapi: 3.0.3
+info:
+  title: Gestion de notes HEI
+  version: 1.0.0
+  description: API de consultation des bulletins et des listes de diplômés (HEI - parcours 3 ans, filières EL/TN).
+
+paths:
+  /transcript/{studentId}:
+    get:
+      summary: Bulletin d'un étudiant
+      description: >-
+        Calcule le bulletin d'un étudiant à partir des notes par examen. Le bulletin
+        contient, pour chacune des 3 années, la liste des cours, la moyenne pondérée
+        par les crédits et un indicateur de bulletin provisoire (notes manquantes).
+        La moyenne générale (3 ans) et le total de crédits sont aussi renvoyés.
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Identifiant de l'étudiant.
+      responses:
+        '200':
+          description: Bulletin de l'étudiant.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscriptResponse'
+        '404':
+          description: Étudiant introuvable.
+
+  /download/graduates/{promotionId}:
+    get:
+      summary: Liste des diplômés d'une promotion (fichier Excel)
+      description: >-
+        Renvoie la liste des diplômés d'une promotion, optionnellement filtrée par
+        filière (EL ou TN). Un étudiant est diplômé s'il a une note dans tous les
+        cours de son programme (années 1 à 3) avec une moyenne d'au moins 10/20 dans
+        chaque cours. La liste est triée par moyenne générale décroissante et chaque
+        diplômé reçoit un rang.
+      parameters:
+        - name: promotionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Identifiant de la promotion.
+        - name: track
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [EL, TN]
+          description: Filière à conserver (si absent, toutes les filières).
+      responses:
+        '200':
+          description: Fichier Excel (.xlsx) contenant rang, référence, prénom, nom et moyenne générale.
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Promotion introuvable.
+
+components:
+  schemas:
+    TranscriptResponse:
+      type: object
+      properties:
+        studentId:
+          type: string
+        ref:
+          type: string
+          description: Numéro de référence de l'étudiant (STD).
+        firstName:
+          type: string
+        lastName:
+          type: string
+        promotion:
+          type: string
+          description: Libellé de la promotion.
+        track:
+          type: string
+          enum: [EL, TN, COMMON]
+        years:
+          type: array
+          items:
+            $ref: '#/components/schemas/YearTranscript'
+        overallAverage:
+          type: number
+          format: double
+          description: Moyenne générale pondérée par les crédits sur les 3 années.
+        totalCredits:
+          type: integer
+          description: Total de crédits du programme.
+    YearTranscript:
+      type: object
+      properties:
+        year:
+          type: integer
+          description: Année d'étude (1 à 3).
+        provisional:
+          type: boolean
+          description: Vrai si au moins une note manque pour cette année.
+        average:
+          type: number
+          format: double
+          description: Moyenne annuelle pondérée par les crédits.
+        credits:
+          type: integer
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseTranscript'
+    CourseTranscript:
+      type: object
+      properties:
+        courseId:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        credits:
+          type: integer
+        average:
+          type: number
+          format: double
+          description: Moyenne du cours (somme des notes d'examens pondérées par les coefficients).
+        complete:
+          type: boolean
+          description: Vrai si toutes les notes d'examens du cours sont saisies.
+    GraduatesResponse:
+      type: object
+      properties:
+        promotionId:
+          type: string
+        promotionLabel:
+          type: string
+        track:
+          type: string
+          enum: [EL, TN]
+        graduates:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraduateResponse'
+    GraduateResponse:
+      type: object
+      properties:
+        rank:
+          type: integer
+          description: Rang du diplômé (1 = meilleure moyenne générale).
+        ref:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        overallAverage:
+          type: number
+          format: double
