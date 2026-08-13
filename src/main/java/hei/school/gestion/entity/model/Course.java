@@ -16,6 +16,7 @@ public class Course {
   private String code;
   private String name;
   private Integer credits;
+  private Track track;
 
   @Builder.Default private Set<User> teachers = new HashSet<>();
 

@@ -31,6 +31,17 @@ public class JUser {
   @Column(nullable = false)
   private JUserRole role;
 
+  @Column(length = 20, unique = true)
+  private String ref;
+
+  @Enumerated(EnumType.STRING)
+  @Column(length = 10)
+  private JTrack track;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "promotion_id")
+  private JPromotion promotion;
+
   @CreationTimestamp
   @Column(name = "created_at", updatable = false)
   private Instant createdAt;

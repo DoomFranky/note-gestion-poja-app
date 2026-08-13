@@ -10,14 +10,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
+public class Exam {
   private String id;
-  private String ref;
-  private String firstName;
-  private String lastName;
-  private String email;
-  private UserRole role;
-  private Track track;
-  private Promotion promotion;
-  private Instant createdAt;
+  private Course course;
+  private Integer academicYear;
+  private String label;
+  private Instant examDatetime;
+  private Integer coefficientNum;
+  private Integer coefficientDen;
 }

@@ -10,8 +10,8 @@ import org.hibernate.annotations.UpdateTimestamp;
     name = "grade",
     uniqueConstraints = {
       @UniqueConstraint(
-          name = "unique_student_course",
-          columnNames = {"student_id", "course_id"})
+          name = "unique_student_course_year",
+          columnNames = {"student_id", "course_id", "academic_year"})
     })
 @Getter
 @Setter
@@ -34,6 +34,9 @@ public class JGrade {
 
   @Column(nullable = false)
   private Double score;
+
+  @Column(name = "academic_year", nullable = false)
+  private Integer academicYear;
 
   @UpdateTimestamp
   @Column(name = "updated_at")
