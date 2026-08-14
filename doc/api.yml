@@ -5,6 +5,21 @@ info:
   description: API de consultation des bulletins et des listes de diplômés (HEI - parcours 3 ans, filières EL/TN).
 
 paths:
+  /:
+    get:
+      summary: Page d'accueil (interface Thymeleaf)
+      description: >-
+        Page HTML listant les promotions. Pour chaque promotion, deux boutons
+        permettent de télécharger la liste des diplômés (filière EL ou TN) via
+        l'endpoint /download/graduates/{promotionId}.
+      responses:
+        '200':
+          description: Page HTML.
+          content:
+            text/html:
+              schema:
+                type: string
+
   /transcript/{studentId}:
     get:
       summary: Bulletin d'un étudiant
