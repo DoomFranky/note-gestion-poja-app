@@ -45,6 +45,52 @@ paths:
         '404':
           description: Étudiant introuvable.
 
+  /transcript/{studentId}/send:
+    post:
+      summary: Envoi du relevé de notes d'un étudiant par email
+      description: >-
+        Génère le relevé de notes (bulletin sur les 3 années) d'un étudiant au format
+        PDF, le dépose sur S3 puis envoie un email à l'étudiant contenant un lien vers
+        l'application (/transcript/{studentId}/pdf) pour télécharger le relevé.
+        L'envoi est asynchrone : la requête répond immédiatement 202, le traitement
+        se poursuit en arrière-plan.
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Identifiant de l'étudiant.
+      responses:
+        '202':
+          description: Envoi du relevé accepté (traitement asynchrone lancé).
+        '404':
+          description: Étudiant introuvable.
+
+  /transcript/{studentId}/pdf:
+    get:
+      summary: Téléchargement du relevé de notes PDF d'un étudiant
+      description: >-
+        Renvoie le relevé de notes PDF de l'étudiant précédemment déposé sur S3
+        (bucket key transcripts/{studentId}/releve-de-notes.pdf).
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Identifiant de l'étudiant.
+      responses:
+        '200':
+          description: Fichier PDF du relevé de notes.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '500':
+          description: Relevé introuvable sur S3 ou erreur de lecture.
+
   /download/graduates/{promotionId}:
     get:
       summary: Liste des diplômés d'une promotion (fichier Excel)
