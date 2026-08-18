@@ -6,9 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import hei.school.gestion.endpoint.event.EventProducer;
-import hei.school.gestion.endpoint.event.model.TranscriptMailRequested;
-import java.util.Collection;
+import hei.school.gestion.service.TranscriptMailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -18,18 +16,19 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class TranscriptMailControllerTest {
 
-  private EventProducer<TranscriptMailRequested> eventProducer;
+  private TranscriptMailService transcriptMailService;
   private MockMvc mockMvc;
 
   @BeforeEach
-  @SuppressWarnings("unchecked")
   void setUp() {
-    eventProducer = mock(EventProducer.class);
-    mockMvc = MockMvcBuilders.standaloneSetup(new TranscriptMailController(eventProducer)).build();
+    transcriptMailService = mock(TranscriptMailService.class);
+    mockMvc =
+        MockMvcBuilders.standaloneSetup(new TranscriptMailController(transcriptMailService))
+            .build();
   }
 
   @Test
-  void publishesEventAndReturnsAccepted() throws Exception {
+  void delegatesToServiceAndReturnsAccepted() throws Exception {
     mockMvc
         .perform(
             post("/transcript/s1/send")
@@ -37,12 +36,10 @@ class TranscriptMailControllerTest {
                 .content("{\"email\":\"destinataire@hei.school\"}"))
         .andExpect(status().isAccepted());
 
-    @SuppressWarnings("unchecked")
-    ArgumentCaptor<Collection<TranscriptMailRequested>> captor =
-        ArgumentCaptor.forClass(Collection.class);
-    verify(eventProducer).accept(captor.capture());
-    TranscriptMailRequested event = captor.getValue().iterator().next();
-    assertEquals("s1", event.getStudentId());
-    assertEquals("destinataire@hei.school", event.getRecipientEmail());
+    ArgumentCaptor<String> studentIdCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<String> emailCaptor = ArgumentCaptor.forClass(String.class);
+    verify(transcriptMailService).sendTranscript(studentIdCaptor.capture(), emailCaptor.capture());
+    assertEquals("s1", studentIdCaptor.getValue());
+    assertEquals("destinataire@hei.school", emailCaptor.getValue());
   }
 }
