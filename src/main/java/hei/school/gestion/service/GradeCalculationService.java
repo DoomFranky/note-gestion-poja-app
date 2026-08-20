@@ -3,6 +3,8 @@ package hei.school.gestion.service;
 import hei.school.gestion.entity.domain.JCourse;
 import hei.school.gestion.entity.domain.JExam;
 import hei.school.gestion.entity.domain.JExamGrade;
+import hei.school.gestion.entity.domain.JExamGradeHistory;
+import hei.school.gestion.entity.domain.JExamType;
 import hei.school.gestion.entity.domain.JGrade;
 import hei.school.gestion.entity.domain.JGradeHistory;
 import hei.school.gestion.entity.domain.JTrack;
@@ -13,6 +15,7 @@ import hei.school.gestion.entity.model.YearResult;
 import hei.school.gestion.mapper.CourseMapper;
 import hei.school.gestion.mapper.UserMapper;
 import hei.school.gestion.repository.CourseRepository;
+import hei.school.gestion.repository.ExamGradeHistoryRepository;
 import hei.school.gestion.repository.ExamGradeRepository;
 import hei.school.gestion.repository.ExamRepository;
 import hei.school.gestion.repository.GradeHistoryRepository;
@@ -37,10 +40,13 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class GradeCalculationService {
 
+  private static final double RATTRAPAGE_MAX_SCORE = 10;
+
   private final UserRepository userRepository;
   private final CourseRepository courseRepository;
   private final ExamRepository examRepository;
   private final ExamGradeRepository examGradeRepository;
+  private final ExamGradeHistoryRepository examGradeHistoryRepository;
   private final GradeRepository gradeRepository;
   private final GradeHistoryRepository gradeHistoryRepository;
   private final StudentGroupRepository studentGroupRepository;
@@ -51,11 +57,10 @@ public class GradeCalculationService {
     List<JExam> exams = examRepository.findByCourseIdAndAcademicYear(courseId, year);
     if (exams.isEmpty()) return null;
 
-    Map<String, Double> scoreByExamId =
-        examGradeRepository.findByStudentIdAndExamCourseId(studentId, courseId).stream()
-            .filter(grade -> year.equals(grade.getExam().getAcademicYear()))
-            .collect(Collectors.toMap(grade -> grade.getExam().getId(), JExamGrade::getScore));
-    return weightedAverage(exams, scoreByExamId);
+    Double rattrapageAverage = rattrapageAverage(exams, scoreByExamId(studentId), year);
+    if (rattrapageAverage != null) return rattrapageAverage;
+
+    return weightedAverage(exams, scoreByExamId(studentId));
   }
 
   public Bulletin computeBulletin(String studentId) {
@@ -69,9 +74,7 @@ public class GradeCalculationService {
     Map<String, List<JExam>> examsByCourseId =
         examRepository.findAll().stream()
             .collect(Collectors.groupingBy(exam -> exam.getCourse().getId()));
-    Map<String, Double> scoreByExamId =
-        examGradeRepository.findByStudentId(studentId).stream()
-            .collect(Collectors.toMap(grade -> grade.getExam().getId(), JExamGrade::getScore));
+    Map<String, Double> scoreByExamId = scoreByExamId(studentId);
 
     List<YearResult> years = new ArrayList<>();
     for (int year = 1; year <= 3; year++) {
@@ -83,7 +86,10 @@ public class GradeCalculationService {
         Integer courseYear = courseExams.get(0).getAcademicYear();
         if (courseYear == null || courseYear != currentYear) continue;
 
-        Double average = weightedAverage(courseExams, scoreByExamId);
+        Double average = rattrapageAverage(courseExams, scoreByExamId, currentYear);
+        if (average == null) {
+          average = weightedAverage(courseExams, scoreByExamId);
+        }
         courseResults.add(
             CourseResult.builder()
                 .course(courseMapper.toDomain(course))
@@ -128,6 +134,60 @@ public class GradeCalculationService {
         upsertGrade(studentId, course, actor);
       }
     }
+  }
+
+  @Transactional
+  public void updateExamGrade(
+      String studentId, String examId, Double newScore, String actorId, String reason) {
+    JExam exam =
+        examRepository
+            .findById(examId)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Examen introuvable"));
+    JUser student =
+        userRepository
+            .findById(studentId)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Étudiant introuvable"));
+    JUser actor =
+        userRepository
+            .findById(actorId)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
+
+    Double effectiveScore =
+        exam.getType() == JExamType.RATTRAPAGE
+            ? Math.min(newScore, RATTRAPAGE_MAX_SCORE)
+            : newScore;
+
+    Optional<JExamGrade> existing = examGradeRepository.findByExamIdAndStudentId(examId, studentId);
+    if (existing.isPresent()) {
+      JExamGrade examGrade = existing.get();
+      if (!examGrade.getScore().equals(effectiveScore)) {
+        examGradeHistoryRepository.save(
+            JExamGradeHistory.builder()
+                .id(UUID.randomUUID().toString())
+                .examGrade(examGrade)
+                .previousScore(examGrade.getScore())
+                .newScore(effectiveScore)
+                .reason(reason)
+                .modifiedBy(actor)
+                .build());
+        examGrade.setScore(effectiveScore);
+        examGrade.setUpdatedBy(actor);
+        examGradeRepository.save(examGrade);
+      }
+      return;
+    }
+
+    examGradeRepository.save(
+        JExamGrade.builder()
+            .id(UUID.randomUUID().toString())
+            .exam(exam)
+            .student(student)
+            .score(effectiveScore)
+            .updatedBy(actor)
+            .build());
   }
 
   private void upsertGrade(String studentId, CourseResult course, JUser actor) {
@@ -185,6 +245,25 @@ public class GradeCalculationService {
   private boolean isForTrack(JTrack courseTrack, JTrack studentTrack) {
     if (courseTrack == null || studentTrack == null) return true;
     return courseTrack == JTrack.COMMON || courseTrack == studentTrack;
+  }
+
+  private Map<String, Double> scoreByExamId(String studentId) {
+    return examGradeRepository.findByStudentId(studentId).stream()
+        .collect(Collectors.toMap(grade -> grade.getExam().getId(), JExamGrade::getScore));
+  }
+
+  private Double rattrapageAverage(
+      List<JExam> exams, Map<String, Double> scoreByExamId, Integer year) {
+    JExam rattrapage =
+        exams.stream()
+            .filter(exam -> exam.getType() == JExamType.RATTRAPAGE)
+            .filter(exam -> year.equals(exam.getAcademicYear()))
+            .findFirst()
+            .orElse(null);
+    if (rattrapage == null) return null;
+    Double score = scoreByExamId.get(rattrapage.getId());
+    if (score == null) return null;
+    return Math.min(score, RATTRAPAGE_MAX_SCORE);
   }
 
   private Double weightedAverage(List<JExam> exams, Map<String, Double> scoreByExamId) {

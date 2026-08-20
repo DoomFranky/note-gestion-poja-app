@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import hei.school.gestion.entity.domain.JCourse;
 import hei.school.gestion.entity.domain.JExam;
 import hei.school.gestion.entity.domain.JExamGrade;
+import hei.school.gestion.entity.domain.JExamGradeHistory;
+import hei.school.gestion.entity.domain.JExamType;
 import hei.school.gestion.entity.domain.JGrade;
 import hei.school.gestion.entity.domain.JGradeHistory;
 import hei.school.gestion.entity.domain.JGroup;
@@ -17,6 +19,8 @@ import hei.school.gestion.entity.domain.JUserRole;
 import hei.school.gestion.entity.model.Course;
 import hei.school.gestion.entity.model.Exam;
 import hei.school.gestion.entity.model.ExamGrade;
+import hei.school.gestion.entity.model.ExamGradeHistory;
+import hei.school.gestion.entity.model.ExamType;
 import hei.school.gestion.entity.model.Grade;
 import hei.school.gestion.entity.model.GradeHistory;
 import hei.school.gestion.entity.model.Group;
@@ -40,6 +44,8 @@ class MappersUnitTest {
   private final ExamGradeMapper examGradeMapper = new ExamGradeMapper(examMapper, userMapper);
   private final GradeHistoryMapper gradeHistoryMapper =
       new GradeHistoryMapper(gradeMapper, userMapper);
+  private final ExamGradeHistoryMapper examGradeHistoryMapper =
+      new ExamGradeHistoryMapper(examGradeMapper, userMapper);
   private final StudentGroupMapper studentGroupMapper =
       new StudentGroupMapper(userMapper, groupMapper);
 
@@ -104,6 +110,7 @@ class MappersUnitTest {
         .course(jCourse())
         .academicYear(1)
         .label("Examen final")
+        .type(JExamType.FINAL)
         .examDatetime(Instant.parse("2024-12-10T09:00:00Z"))
         .coefficientNum(1)
         .coefficientDen(2)
@@ -140,6 +147,18 @@ class MappersUnitTest {
         .previousScore(10.0)
         .newScore(13.5)
         .reason("Réclamation")
+        .modifiedBy(jTeacher())
+        .modifiedAt(Instant.parse("2024-12-21T09:00:00Z"))
+        .build();
+  }
+
+  private JExamGradeHistory jExamGradeHistory() {
+    return JExamGradeHistory.builder()
+        .id("egh1")
+        .examGrade(jExamGrade())
+        .previousScore(10.0)
+        .newScore(8.0)
+        .reason("Plafonnement rattrapage")
         .modifiedBy(jTeacher())
         .modifiedAt(Instant.parse("2024-12-21T09:00:00Z"))
         .build();
@@ -250,12 +269,14 @@ class MappersUnitTest {
     Exam domain = examMapper.toDomain(jExam());
     assertEquals("e1", domain.getId());
     assertEquals("c1", domain.getCourse().getId());
+    assertEquals(ExamType.FINAL, domain.getType());
     assertEquals(1, domain.getCoefficientNum());
     assertEquals(2, domain.getCoefficientDen());
 
     JExam entity = examMapper.toEntity(domain);
     assertEquals("e1", entity.getId());
     assertEquals("c1", entity.getCourse().getId());
+    assertEquals(JExamType.FINAL, entity.getType());
     assertNull(examMapper.toDomain(null));
     assertNull(examMapper.toEntity(null));
   }
@@ -309,6 +330,24 @@ class MappersUnitTest {
     assertEquals("u1", entity.getModifiedBy().getId());
     assertNull(gradeHistoryMapper.toDomain(null));
     assertNull(gradeHistoryMapper.toEntity(null));
+  }
+
+  @Test
+  void mapsExamGradeHistoryBothWays() {
+    ExamGradeHistory domain = examGradeHistoryMapper.toDomain(jExamGradeHistory());
+    assertEquals("egh1", domain.getId());
+    assertEquals("eg1", domain.getExamGrade().getId());
+    assertEquals(10.0, domain.getPreviousScore());
+    assertEquals(8.0, domain.getNewScore());
+    assertEquals("u1", domain.getModifiedBy().getId());
+
+    JExamGradeHistory entity = examGradeHistoryMapper.toEntity(domain);
+    assertEquals("egh1", entity.getId());
+    assertEquals("eg1", entity.getExamGrade().getId());
+    assertEquals(10.0, entity.getPreviousScore());
+    assertEquals("u1", entity.getModifiedBy().getId());
+    assertNull(examGradeHistoryMapper.toDomain(null));
+    assertNull(examGradeHistoryMapper.toEntity(null));
   }
 
   @Test
