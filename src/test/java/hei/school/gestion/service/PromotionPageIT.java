@@ -1,31 +1,37 @@
 package hei.school.gestion.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import hei.school.gestion.conf.FacadeIT;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+@SpringBootTest
+@AutoConfigureMockMvc
 @Transactional
 class PromotionPageIT extends FacadeIT {
 
-  @Autowired TestRestTemplate restTemplate;
+  @Autowired private MockMvc mockMvc;
 
   @Test
-  void listsPromotionsWithGraduateDownloadLinks() {
-    ResponseEntity<String> response = restTemplate.getForEntity("/", String.class);
-
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertTrue(response.getBody().contains("2024"));
-    assertTrue(response.getBody().contains("2026"));
-    assertTrue(response.getBody().contains("/download/graduates/p2024?track=EL"));
-    assertTrue(response.getBody().contains("/download/graduates/p2024?track=TN"));
-    assertTrue(response.getBody().contains("/download/graduates/p2026?track=EL"));
-    assertTrue(response.getBody().contains("/download/graduates/p2026?track=TN"));
+  @WithMockUser(roles = "ADMIN", username = "admin@test.com")
+  void listsPromotionsWithGraduateDownloadLinks() throws Exception {
+    mockMvc
+        .perform(get("/"))
+        .andExpect(status().isOk())
+        .andExpect(content().string(containsString("2024")))
+        .andExpect(content().string(containsString("2026")))
+        .andExpect(content().string(containsString("/download/graduates/p2024?track=EL")))
+        .andExpect(content().string(containsString("/download/graduates/p2024?track=TN")))
+        .andExpect(content().string(containsString("/download/graduates/p2026?track=EL")))
+        .andExpect(content().string(containsString("/download/graduates/p2026?track=TN")));
   }
+  ;
 }
