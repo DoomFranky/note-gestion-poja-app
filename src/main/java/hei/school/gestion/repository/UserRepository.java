@@ -16,4 +16,10 @@ public interface UserRepository extends JpaRepository<JUser, String> {
 
   @EntityGraph(attributePaths = "promotion")
   List<JUser> findByPromotionId(String promotionId);
+
+  Optional<JUser> findByEmail(String email);
+
+  boolean existsByEmail(String email);
+
+  void deleteAll();
 }
