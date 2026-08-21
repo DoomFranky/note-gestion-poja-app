@@ -2,6 +2,8 @@ package hei.school.gestion.entity.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -36,6 +38,10 @@ public class JExam {
 
   @Column(nullable = false, length = 100)
   private String label;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private JExamType type;
 
   @Column(name = "exam_datetime", nullable = false)
   private Instant examDatetime;

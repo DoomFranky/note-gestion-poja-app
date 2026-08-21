@@ -10,13 +10,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Exam {
+public class ExamGradeHistory {
   private String id;
-  private Course course;
-  private Integer academicYear;
-  private String label;
-  private ExamType type;
-  private Instant examDatetime;
-  private Integer coefficientNum;
-  private Integer coefficientDen;
+  private ExamGrade examGrade;
+  private Double previousScore;
+  private Double newScore;
+  private String reason;
+  private User modifiedBy;
+  private Instant modifiedAt;
 }

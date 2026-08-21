@@ -14,4 +14,7 @@ public interface ExamGradeRepository extends JpaRepository<JExamGrade, String> {
 
   @EntityGraph(attributePaths = {"exam.course", "student"})
   List<JExamGrade> findByStudentIdAndExamCourseId(String studentId, String courseId);
+
+  @EntityGraph(attributePaths = {"exam.course", "student"})
+  java.util.Optional<JExamGrade> findByExamIdAndStudentId(String examId, String studentId);
 }
